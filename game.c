@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define NUM_OPTIONS 10
 
@@ -27,7 +28,8 @@ typedef struct {
 } Stack;
 
 
-int sizeLayout = 0;
+int maxColumn = 0;
+int maxLine = 0;
 Stack layout[10];
 
 
@@ -43,18 +45,69 @@ void printBall(int ball) {
     printf("|\033[1;%dm%3d\033[0m|", ball+30, ball);
 }
 
-void setUpGameLayout(int size) {
-    sizeLayout = size;
-    for (int i = 0; i < sizeLayout; i++) {
-        for (int j = 0; j < sizeLayout; j++) {
-            layout[j].balls[i] = size;
+void cleanGameLayout() {
+    for (int i = 0; i < maxLine; i++) {
+        for (int j = 0; j < maxColumn; j++) {
+            layout[j].balls[i] = 0;
+        }
+        layout[i].size = 0;
+    }
+}
+
+bool contains(int* arr, int size, int num) {
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == num) return 1; 
+    }   
+    return 0;
+}
+
+int* generateRandomNums(int amount, int range) {
+    int* arr = malloc(sizeof(int) * amount);
+    for (int i = 0; i < amount; i++) {
+        int num = rand() % range;
+        while (contains(arr, amount, num)) {
+            num = rand() % range;
+        } 
+        arr[i] = num;
+    }
+    return arr;
+}
+
+
+void setUpGameLayout(int numColuns, int numLines, int numEmptyColumns) {
+    cleanGameLayout();
+
+    maxColumn = numColuns;
+    maxLine = numLines;
+    int balls[10];
+
+    for (int i = 0; i < 10; i++) {
+        balls[i] = 0;
+    }
+
+    int* emptyColumns = generateRandomNums(numEmptyColumns, numColuns);
+
+    for (int j = 0; j < numColuns; j++) {
+        if (contains(emptyColumns, numEmptyColumns, j)) continue;
+        for (int i = 0; i < numLines ; i++) {
+            int num = rand() % (numColuns - numEmptyColumns);
+            
+            while (balls[num] >= numLines) {
+                num = rand() % (numColuns - numEmptyColumns);
+            }
+
+            balls[num]++;
+
+            layout[j].balls[i] = num + 1;
+            layout[j].size++;
+
         }
     }
 }
 
 void printLayout() {
-    for (int i = sizeLayout - 1; i >= 0; i--) {
-        for (int j = 0; j < sizeLayout; j++) {
+    for (int i = maxLine - 1; i >= 0; i--) {
+        for (int j = 0; j < maxColumn; j++) {
             int ball = layout[j].balls[i];
 
             if (ball == 0) 
@@ -64,7 +117,7 @@ void printLayout() {
         }
         printf("\n");
     }
-    for (int i = 0; i < sizeLayout; i++) printf("=====");
+    for (int i = 0; i < maxColumn; i++) printf("=====");
 }
 
 void showInfo() {
@@ -72,8 +125,9 @@ void showInfo() {
 }
 
 void startGame() {
+    setUpGameLayout(5, 4, 1);
     while (true) {
-        cleanScreen();
+        // cleanScreen();
         printLayout();
         break;
     }
@@ -143,7 +197,7 @@ int menu() {
 }
 
 int main() {
-    setUpGameLayout(6);
+    srand(time(NULL));
     while (true) {
         int choise = menu() - 1;
 
