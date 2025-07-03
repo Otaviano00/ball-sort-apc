@@ -1,0 +1,39 @@
+# Binários comuns de compilação C
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+
+# Arquivos de depuração
+*.gch
+*.dSYM/
+*.stackdump
+
+# Arquivos gerados por compiladores
+*.log
+*.map
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Makefiles de backup ou temporários
+*~
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Arquivos de build comuns
+build/
+Debug/
+Release/
+
+# Arquivos temporários do sistema
+.DS_Store
+Thumbs.db
