@@ -8,6 +8,8 @@
 typedef void (*OneArgFunction)(int);
 typedef void (*NoArgsFunction)();
 
+// Dados das opções
+
 typedef struct {
     char name[20];
     bool hasTitle;
@@ -17,6 +19,18 @@ typedef struct {
 Option options[NUM_OPTIONS];
 int maxOption = 0;
 
+// Dados sobre o jogo
+
+typedef struct {
+    int size;
+    int balls[10];
+} Stack;
+
+
+int sizeLayout = 0;
+Stack layout[10];
+
+
 void cleanScreen() {
     #ifdef _WIN32
         system("cls");
@@ -25,12 +39,44 @@ void cleanScreen() {
     #endif
 }
 
+void printBall(int ball) {
+    printf("|\033[1;%dm%3d\033[0m|", ball+30, ball);
+}
+
+void setUpGameLayout(int size) {
+    sizeLayout = size;
+    for (int i = 0; i < sizeLayout; i++) {
+        for (int j = 0; j < sizeLayout; j++) {
+            layout[j].balls[i] = size;
+        }
+    }
+}
+
+void printLayout() {
+    for (int i = sizeLayout - 1; i >= 0; i--) {
+        for (int j = 0; j < sizeLayout; j++) {
+            int ball = layout[j].balls[i];
+
+            if (ball == 0) 
+                printf("|   |");
+            else 
+                printBall(ball);
+        }
+        printf("\n");
+    }
+    for (int i = 0; i < sizeLayout; i++) printf("=====");
+}
+
 void showInfo() {
     printf("\n\n\nJogo legal feito por Kaua Otaviano para a materia APC.\n");
 }
 
 void startGame() {
-    printf("jogo\n");
+    while (true) {
+        cleanScreen();
+        printLayout();
+        break;
+    }
 }
 
 void configGame() {
@@ -97,6 +143,7 @@ int menu() {
 }
 
 int main() {
+    setUpGameLayout(6);
     while (true) {
         int choise = menu() - 1;
 
