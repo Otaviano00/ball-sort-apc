@@ -1,0 +1,20 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include "utils.h"
+
+void cleanScreen() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
+
+bool contains(int* arr, int size, int num) {
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == num) return true; 
+    }   
+    return false;
+}

@@ -17,13 +17,13 @@ Um jogo de ordenação de bolas coloridas em colunas desenvolvido em linguagem C
 ### Compilação e Execução
 ```bash
 # Compilar o projeto
-gcc game.c -o ballsort
+gcc game.c options.c utils.c data_base.c -o game  && .\game
 
 # Executar no Windows
-.\ballsort.exe
+.\game
 
 # Executar no Linux/macOS
-./ballsort
+./game
 ```
 
 ---
