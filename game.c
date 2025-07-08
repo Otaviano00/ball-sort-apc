@@ -123,8 +123,6 @@ void setUpOptions() {
 int menu() {
     cleanScreen();
 
-    setUpOptions();
-
     printf("=================== Ball Sort ===================\n");
 
     showOptions();
@@ -144,14 +142,22 @@ int main() {
 
     // insertInto("users", &user);
 
+    // selectById("users", 2);
+    // selectByKey("configs", "valor");
+    // selectByKey("configs", "valor2");
+
     // User user2 = {"Kalel"};
     // insertInto("users", &user2);
 
-    // KeyValue config = {"valor", "vaitomarnocu"};
+    // KeyValue config = {"valor2", "vaitomarnocu2"};
 
     // insertInto("configs", &config);
 
+    // selectByKey("configs2", "valor2");
+
     // insertInto("users", &user2);
+
+    setUpOptions();
 
     while (true) {
         int choise = menu() - 1;

@@ -18,3 +18,22 @@ bool contains(int* arr, int size, int num) {
     }   
     return false;
 }
+
+int fsize(char* file) {
+  int size;
+  FILE* fh;
+
+  fh = fopen(file, "rb");
+  if(fh != NULL){
+    if(fseek(fh, 0, SEEK_END) != 0){
+      fclose(fh);
+      return -1;
+    }
+
+    size = ftell(fh);
+    fclose(fh);
+    return size;
+  }
+
+  return -1; //error
+}

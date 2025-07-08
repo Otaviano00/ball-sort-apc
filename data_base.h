@@ -19,11 +19,16 @@ typedef struct {
 } Record;
 
 typedef struct {
+    Record* elements;
+    int size;
+} List;
+
+typedef struct {
     char name[20];
 } User;
 
-extern int maxIdUser;
-
 bool insertInto(char* table, void* payload); 
+Record* selectById(char* table, int id);
+KeyValue* selectByKey(char* table, char* key);
 
 #endif

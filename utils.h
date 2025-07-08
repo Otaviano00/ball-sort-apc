@@ -5,5 +5,6 @@
 
 void cleanScreen(); // Assumindo que existe em outro arquivo
 bool contains(int* arr, int size, int num);
+int fsize(char* file);
 
 #endif
