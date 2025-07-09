@@ -3,20 +3,21 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "utils.h"
+#include "data_base.h"
 
 void cleanScreen() {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
+  #ifdef _WIN32
+      system("cls");
+  #else
+      system("clear");
+  #endif
 }
 
 bool contains(int* arr, int size, int num) {
-    for (int i = 0; i < size; i++) {
-        if (arr[i] == num) return true; 
-    }   
-    return false;
+  for (int i = 0; i < size; i++) {
+      if (arr[i] == num) return true; 
+  }   
+  return false;
 }
 
 int fsize(char* file) {
@@ -36,4 +37,21 @@ int fsize(char* file) {
   }
 
   return -1; //error
+}
+
+void freeList(List* list) {
+  if (list == NULL) return;
+  
+  for (int i = 0; i < list->size; i++) {
+      freeRecord(&(list->elements[i]));
+  }
+  free(list->elements);
+  free(list);
+}
+
+void freeRecord(Record* record) {
+  if (record == NULL) return;
+  free(record->key);
+  free(record->value);
+  free(record);
 }

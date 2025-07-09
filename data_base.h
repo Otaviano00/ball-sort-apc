@@ -25,10 +25,13 @@ typedef struct {
 
 typedef struct {
     char name[20];
+    char cargo[20];
 } User;
 
-bool insertInto(char* table, void* payload); 
-Record* selectById(char* table, int id);
-KeyValue* selectByKey(char* table, char* key);
+bool persist(char* table, void* payload); 
+Record* findById(char* table, int id);
+KeyValue* findByKey(char* table, char* key);
+List* findAll(char* table);
+bool update(char* table, void* record);
 
 #endif

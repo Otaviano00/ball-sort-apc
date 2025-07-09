@@ -138,9 +138,30 @@ int menu() {
 int main() {
     srand(time(NULL));
 
-    // User user = {"Kaua"};
+    User user = {"Kaua", "Admin"};
 
-    // insertInto("users", &user);
+    // persist("users", &user);
+
+    strcpy(user.cargo, "test"); 
+
+    Record* record = findById("users", 2);
+
+    strcpy(((User*) record->value)->cargo, "");
+
+    update("users", record);
+   
+    freeRecord(record);
+
+    KeyValue config = {"valor2", "vaitomarnocu2"};
+
+    persist("configs", &config);
+
+    KeyValue* record2 = findByKey("configs", "valor2");
+
+    strcpy(record2->key, "valor3");
+
+    update("configs", record2);
+
 
     // selectById("users", 2);
     // selectByKey("configs", "valor");
@@ -149,28 +170,24 @@ int main() {
     // User user2 = {"Kalel"};
     // insertInto("users", &user2);
 
-    // KeyValue config = {"valor2", "vaitomarnocu2"};
-
-    // insertInto("configs", &config);
-
     // selectByKey("configs2", "valor2");
 
     // insertInto("users", &user2);
 
-    setUpOptions();
+//     setUpOptions();
 
-    while (true) {
-        int choise = menu() - 1;
+//     while (true) {
+//         int choise = menu() - 1;
 
-        if (choise < 0 || choise >= maxOption) continue;
+//         if (choise < 0 || choise >= maxOption) continue;
 
-        if (choise == maxOption - 1) {
-            options[choise].function();
-            break;
-        }
+//         if (choise == maxOption - 1) {
+//             options[choise].function();
+//             break;
+//         }
         
-        showOption(options[choise]);        
-    }
+//         showOption(options[choise]);        
+//     }
 
-    return 0;
+//     return 0;
 }
