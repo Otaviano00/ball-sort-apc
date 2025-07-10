@@ -43,7 +43,7 @@ void freeList(List* list) {
   if (list == NULL) return;
   
   for (int i = 0; i < list->size; i++) {
-      freeRecord(&(list->elements[i]));
+    freeRecord(&(list->elements[i]));
   }
   free(list->elements);
   free(list);
@@ -51,7 +51,7 @@ void freeList(List* list) {
 
 void freeRecord(Record* record) {
   if (record == NULL) return;
-  free(record->key);
+      
   free(record->value);
-  free(record);
+  free(record->key);
 }

@@ -32,6 +32,8 @@ bool persist(char* table, void* payload);
 Record* findById(char* table, int id);
 KeyValue* findByKey(char* table, char* key);
 List* findAll(char* table);
-bool update(char* table, void* record);
+bool update(char* table, Record* record);
+bool deleteById(char* table, int id);
+bool deleteByKey(char* table, char* key);
 
 #endif
