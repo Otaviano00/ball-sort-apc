@@ -13,11 +13,32 @@ void cleanScreen() {
   #endif
 }
 
+void pressEnter(int numOfBreaks) {
+  for (int i = 0; i < numOfBreaks; i++) printf("\n");
+
+  printf("Pressione <Enter> para continuar...");
+  getchar();
+  cleanScreen();
+}
+
 bool contains(int* arr, int size, int num) {
   for (int i = 0; i < size; i++) {
       if (arr[i] == num) return true; 
   }   
   return false;
+}
+
+int char2int(char caractere) {
+  int num = caractere - '0';
+
+  if (num < 0 || num > 9) return caractere;
+  
+  return num;
+}
+
+char int2char(int num) {
+  if (num < 0 || num > 9) return num;
+  return num + '0';
 }
 
 int fsize(char* file) {

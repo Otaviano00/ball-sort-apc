@@ -8,9 +8,12 @@
 #define DIR "tables/"
 #define TYPE_FILE ".bin"
 
+// Funções auxiliares
+
 TableType getTableType(char* table) {
     if (strcmp(table, "users") == 0) return TABLE_USERS;
     if (strcmp(table, "configs") == 0) return TABLE_CONFIGS;
+    if (strcmp(table, "levels") == 0) return TABLE_LEVEL;
     if (strcmp(table, "infos") == 0) return TABLE_INFOS;
     return TABLE_UNKNOWN;
 }
@@ -24,9 +27,19 @@ char* createFilePath(char* file) {
     return filePath;
 }
 
+void cleanTable(char* table) {
+    if (getTableType(table) == TABLE_UNKNOWN) return;
+
+    char* filePath = createFilePath(table);
+
+    FILE* arq = fopen(filePath, "wb");
+    fclose(arq);
+
+    free(filePath);
+}
+
 bool keyExists(char* table, char* key) {
     char* filePath;
-    int numOfRecords = 0;
     KeyValue* keyValue;
     FILE* arq;
     bool found = false;
@@ -56,118 +69,105 @@ bool keyExists(char* table, char* key) {
     free(keyValue);
     fclose(arq);
 
-    // Se encontrou a chave, retorna true. Se não retorna false
     return found;
 }
 
+
 int getLastId(char* table) {
     char* filePath;
-    Record record;
     int sizeRecord = 0;
-    KeyValue keyValue;
     FILE* arq;
     int maxId = 0;
     int pos = 0;
-    fpos_t fpos;
+    
+    filePath = createFilePath(table);
+    arq = fopen(filePath, "rb");
 
     switch (getTableType(table)) {
         case TABLE_USERS:
-            filePath = createFilePath(table);
-    
             sizeRecord = sizeof(int) + sizeof(User);
-
-            pos = fsize(filePath) - sizeRecord;
-
-            arq = fopen(filePath, "rb");
-            
-            fseek(arq, pos, SEEK_SET);
-            
-            fread(&maxId, sizeof(int), 1, arq);    
-
-            fclose(arq);
+            break;
+        case TABLE_LEVEL:
+            sizeRecord = sizeof(int) + sizeof(Level);
             break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
     }
+        
+    pos = fsize(filePath) - sizeRecord;
+    fseek(arq, pos, SEEK_SET);
+    fread(&maxId, sizeof(int), 1, arq);    
+    
+    fclose(arq);
     free(filePath);
     return maxId;
 }
 
-bool persist(char* table, void* payload) {
+// Funções de leitura:
+
+User* findUserByName(char* name) {
     char* filePath;
-    Record record;
-    int sizeRecord = 0;
-    KeyValue keyValue;
     FILE* arq;
-    int maxId = 0;
-    int pos = 0;
-    fpos_t fpos;
+    bool found = false;
 
-    switch (getTableType(table)) {
-        case TABLE_USERS:
-            filePath = createFilePath(table);
+    filePath = createFilePath("users");
 
-            maxId = getLastId(table) + 1;
+    arq = fopen(filePath, "rb");
 
-            record = (Record) {&maxId, payload};
-            
-            arq = fopen(filePath, "ab");
-
-            fwrite(record.key, sizeof(int), 1, arq);
-            fwrite(record.value, sizeof(User), 1, arq);
-    
-            fclose(arq);
-            break;
-        case TABLE_CONFIGS:
-        case TABLE_INFOS:
-            filePath = createFilePath(table);
-
-            if (keyExists(table, ((KeyValue*) payload)->key)) {
-                printf("A Key '%s' jah existe. Use outra key.\n", ((KeyValue*) payload)->key);
-                free(filePath);
-                return false;
-            };
-
-            arq = fopen(filePath, "ab");
-
-            fwrite((KeyValue*) payload, sizeof(KeyValue), 1, arq);
-
-            fclose(arq);
-            break;
-        default:
-            printf("Tabela '%s' nao encontrada\n", table);
-            return false;
+    if (arq == NULL) {
+        printf("Erro ao abrir arquivo: %s\n", filePath);
+        free(filePath);
+        return NULL;
     }
+
+    User* user = malloc(sizeof(User));
+    found = false;
+    do {
+        int temp;
+        fread(&temp, sizeof(int), 1, arq);
+        fread(user, sizeof(User), 1, arq);
+
+        if (strcmp(user->name, name) == 0) {
+            found = true;
+            break;
+        }
+    } while(feof(arq) == 0);
+
+    if (!found) {
+        printf("Nome %s nao encontrado.\n", name);
+        free(filePath);
+        free(user);
+        fclose(arq);
+        return NULL;
+    }
+
+    fclose(arq);
+ 
     free(filePath);
-    return true;
+    return user;
 }
+
 
 Record* findById(char* table, int id) {
     char* filePath;
     Record* record;
-    int sizeRecord = 0;
     FILE* arq;
     int maxId = 0;
     bool found = false;
+    
+    filePath = createFilePath(table);
+    maxId = getLastId(table);
+    if (id > maxId) return NULL;
+    arq = fopen(filePath, "rb");
+
+    if (arq == NULL) {
+        printf("Erro ao abrir arquivo: %s\n", filePath);
+        free(filePath);
+        return NULL;
+    }
 
     switch (getTableType(table)) {
         case TABLE_USERS:
-            filePath = createFilePath(table);
-
-            maxId = getLastId(table);
-      
-            if (id > maxId) return NULL;
-
-            filePath = createFilePath(table);
-
-            arq = fopen(filePath, "rb");
-
-            if (arq == NULL) {
-                printf("Erro ao abrir arquivo: %s\n", filePath);
-                free(filePath);
-                return NULL;
-            }
-
             record = malloc(sizeof(Record));  
             record->key = malloc(sizeof(int));
             record->value = malloc(sizeof(User));
@@ -183,22 +183,40 @@ Record* findById(char* table, int id) {
                 }
             } while(feof(arq) == 0);
 
-            if (found) {
-                printf("Id: %d e nome: %s\n", *(int*) record->key, (*(User*) record->value).name);
-            } else { 
-                printf("Id %s nao encontrada.\n", id);
-                free(filePath);
-                freeRecord(record);
-                free(record);
-                fclose(arq);
-                return NULL;
-            }
+            break;
+        case TABLE_LEVEL:
+            record = malloc(sizeof(Record));  
+            record->key = malloc(sizeof(int));
+            record->value = malloc(sizeof(Level));
 
-            fclose(arq);
+            found = false;
+            do {
+                fread(record->key, sizeof(int), 1, arq);
+                fread(record->value, sizeof(Level), 1, arq);
+
+                if (*(int*) record->key == id) {
+                    found = true;
+                    break;
+                }
+            } while(feof(arq) == 0);
+
             break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
+            found = false;
+            break;
     }
+
+    if (!found) { 
+        printf("Id %s nao encontrada.\n", id);
+        free(filePath);
+        freeRecord(record);
+        free(record);
+        fclose(arq);
+        return NULL;
+    }
+
+    fclose(arq);
     free(filePath);
     return record;
 }
@@ -206,84 +224,91 @@ Record* findById(char* table, int id) {
 KeyValue* findByKey(char* table, char* key) {
     char* filePath;
     int sizeRecord = 0;
-    int numOfRecords = 0;
     KeyValue* keyValue;
     FILE* arq;
     bool found = false;
-    int maxId = 0;
 
-    switch (getTableType(table)) {
-        case TABLE_INFOS:
-        case TABLE_CONFIGS:
-            filePath = createFilePath(table);
-            sizeRecord = sizeof(KeyValue);
-
-            arq = fopen(filePath, "rb");
-
-            if (arq == NULL) {
-                printf("Erro ao abrir arquivo: %s\n", filePath);
-                free(filePath);
-                return NULL;
-            }
-
-            keyValue = malloc(sizeof(KeyValue));
-            found = false;
-            do {
-                fread(keyValue, sizeof(KeyValue), 1, arq);
-
-                if (strcmp(keyValue->key, key) == 0) {
-                    found = true;
-                    break;
-                }
-            } while(feof(arq) == 0);
-
-            if (found) {
-                printf("Key: %s e Value: %s\n", keyValue->key, keyValue->value);
-            } else {
-                printf("Key %s nao encontrada.\n", key);
-                free(filePath);
-                freeRecord((Record*) keyValue);
-                fclose(arq);
-                return NULL;
-            }
-
-            fclose(arq);
-            break;
-        default:
-            printf("Tabela '%s' nao encontrada\n", table);
+    if (getTableType(table) == TABLE_UNKNOWN) {
+        printf("Tabela '%s' nao encontrada\n", table);
+        return NULL;
     }
+
+    filePath = createFilePath(table);
+    sizeRecord = sizeof(KeyValue);
+
+    arq = fopen(filePath, "rb");
+
+    if (arq == NULL) {
+        printf("Erro ao abrir arquivo: %s\n", filePath);
+        free(filePath);
+        return NULL;
+    }
+
+    keyValue = malloc(sizeof(KeyValue));
+    found = false;
+    do {
+        fread(keyValue, sizeof(KeyValue), 1, arq);
+
+        if (strcmp(keyValue->key, key) == 0) {
+            found = true;
+            break;
+        }
+    } while(feof(arq) == 0);
+
+    if (!found) {
+        printf("Key %s nao encontrada.\n", key);
+        free(filePath);
+        freeRecord((Record*) keyValue);
+        fclose(arq);
+        return NULL;
+    }
+
+    fclose(arq);
     free(filePath);
     return keyValue;
 }
 
 List* findAll(char* table) {
     char* filePath;
-    Record* record;
-    KeyValue* keyValue;
     List* list;
     FILE* arq;
     int sizeRecord = 0;
     int numOfRecords = 0;
-    bool found = false;
     
+    filePath = createFilePath(table);
+    arq = fopen(filePath, "rb");
+
+    if (arq == NULL) {
+        printf("Erro ao abrir arquivo: %s\n", filePath);
+        free(filePath);
+        return NULL;
+    }
+
+    list = malloc(sizeof(List));
+
     switch (getTableType(table)) {
-        case TABLE_USERS:
-            filePath = createFilePath(table);
-            sizeRecord = sizeof(int) + sizeof(User);
+        case TABLE_LEVEL:
+            sizeRecord = sizeof(int) + sizeof(Level);
             numOfRecords = fsize(filePath) / sizeRecord;
-      
-            filePath = createFilePath(table);
+                
+            list->elements = malloc(sizeof(Record) * numOfRecords);
+            for (int i = 0; i < numOfRecords; i++) {
+                list->elements[i].key = malloc(sizeof(int));
+                list->elements[i].value = malloc(sizeof(Level));
+            }
+            list->size = numOfRecords;
 
-            arq = fopen(filePath, "rb");
-
-            if (arq == NULL) {
-                printf("Erro ao abrir arquivo: %s\n", filePath);
-                free(filePath);
-                return NULL;
+            for (int i = 0; i < numOfRecords; i++) {
+                fread((int*) list->elements[i].key, sizeof(int), 1, arq);
+                fread((Level*) list->elements[i].value, sizeof(Level), 1, arq);
             }
 
-            list = malloc(sizeof(List));
-            
+            break;
+
+        case TABLE_USERS:
+            sizeRecord = sizeof(int) + sizeof(User);
+            numOfRecords = fsize(filePath) / sizeRecord;
+                
             list->elements = malloc(sizeof(Record) * numOfRecords);
             for (int i = 0; i < numOfRecords; i++) {
                 list->elements[i].key = malloc(sizeof(int));
@@ -296,25 +321,11 @@ List* findAll(char* table) {
                 fread((User*) list->elements[i].value, sizeof(User), 1, arq);
             }
 
-            fclose(arq);
             break;
         case TABLE_INFOS:
         case TABLE_CONFIGS:
-            filePath = createFilePath(table);
             sizeRecord = sizeof(KeyValue);
             numOfRecords = fsize(filePath) / sizeRecord;
-
-            filePath = createFilePath(table);
-
-            arq = fopen(filePath, "rb");
-
-            if (arq == NULL) {
-                printf("Erro ao abrir arquivo: %s\n", filePath);
-                free(filePath);
-                return NULL;
-            }
-
-            list = malloc(sizeof(List));
             
             list->elements = malloc(sizeof(Record) * numOfRecords);
             for (int i = 0; i < numOfRecords; i++) {
@@ -326,17 +337,71 @@ List* findAll(char* table) {
              for (int i = 0; i < numOfRecords; i++) {
                 fread((char*) list->elements[i].key, 65, 1, arq);
                 fread((char*) list->elements[i].value, 1025, 1, arq);
-                
-                printf("chave: %s e valor: %s\n", list->elements[i].key, list->elements[i].value);
+            }
+            break;
+        default:
+            printf("Tabela '%s' nao encontrada\n", table);
+            return NULL;
+    }
+
+    fclose(arq);
+    free(filePath);
+    return list;
+}
+
+bool persist(char* table, void* payload) {
+    char* filePath;
+    Record record;
+    KeyValue keyValue;
+    FILE* arq;
+    int maxId = 0;
+
+    bool ret = true;
+    
+    filePath = createFilePath(table);
+    maxId = getLastId(table) + 1;
+    record = (Record) {&maxId, payload};
+    arq = fopen(filePath, "ab");
+
+    switch (getTableType(table)) {
+        case TABLE_USERS:
+
+            if (findUserByName(((User*) payload)->name) != NULL) {
+                printf("O nickname '%s' jah estah cadastrado. Use outro por favor.\n", ((User*) payload)->name);
+                ret = false;
+                break;
             }
 
+            fwrite(record.key, sizeof(int), 1, arq);
+            fwrite(record.value, sizeof(User), 1, arq);
+    
+            break;
+        case TABLE_LEVEL:            
+            fwrite(record.key, sizeof(int), 1, arq);
+            fwrite(record.value, sizeof(Level), 1, arq);
+              
+            break;
+        case TABLE_CONFIGS:
+        case TABLE_INFOS:            
+            if (keyExists(table, ((KeyValue*) payload)->key)) {
+                printf("A Key '%s' jah existe. Use outra key.\n", ((KeyValue*) payload)->key);
+                ret = false;
+                break;
+            };
+                        
+            fwrite((KeyValue*) payload, sizeof(KeyValue), 1, arq);
+            
             fclose(arq);
             break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
+            ret = false;
+            break;
     }
+
+    fclose(arq);
     free(filePath);
-    return list;
+    return ret;
 }
 
 bool update(char* table, Record* payload) {
@@ -359,11 +424,12 @@ bool update(char* table, Record* payload) {
             found = false;
             do {
                 User temp;
+                int id;
                 fgetpos(arq, &fpos);
-                fread(&maxId, sizeof(int), 1, arq);  
+                fread(&id, sizeof(int), 1, arq);  
                 fread(&temp, sizeof(User), 1, arq);
                 
-                if (maxId == *(int*) payload->key) {
+                if (id == *(int*) payload->key) {
                     found = true;
                     break;
                 }
@@ -373,7 +439,6 @@ bool update(char* table, Record* payload) {
 
             if (!found) return false; 
 
-
             arq = fopen(filePath, "r+b");
 
             fsetpos(arq, &fpos);
@@ -382,29 +447,35 @@ bool update(char* table, Record* payload) {
             record = ((Record*) payload);
             fwrite(record->value, sizeof(User), 1, arq);
 
-
             fclose(arq);
             break;
         case TABLE_CONFIGS:
         case TABLE_INFOS:
             filePath = createFilePath(table);
-            sizeRecord = sizeof(KeyValue);
-            maxId = fsize(filePath) / sizeRecord;
 
             arq = fopen(filePath, "r+b");
 
             keyValue = ((KeyValue*) payload);
 
-            fpos_t pos;
-            for (int i = 0; i < maxId; i++) {
-                fgetpos(arq, &pos);
+            found = false;
+            do {
+                fgetpos(arq, &fpos);
                 KeyValue temp;
                 fread(&temp, sizeof(KeyValue), 1, arq);
+                
+                if (strcmp(temp.key, keyValue->key) == 0) {
+                    found = true;
+                    break;
+                };
+            } while(feof(arq) == 0);
 
-                if (strcmp(temp.key, keyValue->key) == 0) break;
+            if (!found) {
+                free(filePath);
+                fclose(arq);
+                return false;
             }
 
-            fsetpos(arq, &pos);
+            fsetpos(arq, &fpos);
 
             fwrite(keyValue, sizeof(KeyValue), 1, arq);
 
@@ -412,6 +483,7 @@ bool update(char* table, Record* payload) {
             break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
+            return false;
     }
     free(filePath);
     return true;
@@ -419,22 +491,21 @@ bool update(char* table, Record* payload) {
 
 bool deleteById(char* table, int id) {
     char* filePath;
-    Record* record;
-    int sizeRecord = 0;
     FILE* arq;
     int maxId = 0;
     List* allRecords;
+    bool ret = true;
+    
+    filePath = createFilePath(table);
+    maxId = getLastId(table);
+    if (id > maxId) return false;
+
+    allRecords = findAll(table);
+
+    arq = fopen(filePath, "wb");
 
     switch (getTableType(table)) {
         case TABLE_USERS:
-            filePath = createFilePath(table);
-            maxId = getLastId(table);
-            if (id > maxId) return false;
-
-            allRecords = findAll(table);
-
-            arq = fopen(filePath, "wb");
-
             for (int i = 0; i < allRecords->size; i++) {
                 if (*(int*) allRecords->elements[i].key == id) continue;
 
@@ -443,51 +514,51 @@ bool deleteById(char* table, int id) {
             }
             
             printf("Usuario deletado com sucesso!");
-            
-            fclose(arq);
-            freeList(allRecords);
             break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
+            ret = false;
+            break;
         }
+                
+    fclose(arq);
+    freeList(allRecords);
     free(filePath);
-    return true;
+    return ret;
 }
 
 bool deleteByKey(char* table, char* key) {
-char* filePath;
+    char* filePath;
     Record* record;
     int sizeRecord = 0;
     FILE* arq;
     int maxId = 0;
     List* allRecords;
 
-    switch (getTableType(table)) {
-        case TABLE_CONFIGS:
-        case TABLE_INFOS:
-            filePath = createFilePath(table);
-        
-            if (!keyExists(table, key)) return false;
+    if (getTableType(table) == TABLE_UNKNOWN) {
+        printf("Tabela %s nao encontrada.\n", table);
+        return false;
+    }
 
-            allRecords = findAll(table);
+    filePath = createFilePath(table);
 
-            arq = fopen(filePath, "wb");
+    if (!keyExists(table, key)) return false;
 
-            for (int i = 0; i < allRecords->size; i++) {
-                if (strcmp((char*) allRecords->elements[i].key, key) == 0) continue;
+    allRecords = findAll(table);
 
-                fwrite((char*) allRecords->elements[i].key, sizeof(char) * 65, 1, arq);
-                fwrite((char*) allRecords->elements[i].value, sizeof(char) * 1025, 1, arq);
-            }
+    arq = fopen(filePath, "wb");
 
-            printf("Registro deletado com sucesso!");
-            
-            fclose(arq);
-            freeList(allRecords);
-            break;
-        default:
-            printf("Tabela '%s' nao encontrada\n", table);
-        }
+    for (int i = 0; i < allRecords->size; i++) {
+        if (strcmp((char*) allRecords->elements[i].key, key) == 0) continue;
+
+        fwrite((char*) allRecords->elements[i].key, sizeof(char) * 65, 1, arq);
+        fwrite((char*) allRecords->elements[i].value, sizeof(char) * 1025, 1, arq);
+    }
+
+    printf("Registro deletado com sucesso!");
+    
+    fclose(arq);
+    freeList(allRecords);
     free(filePath);
     return true;
 }

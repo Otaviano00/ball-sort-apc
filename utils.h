@@ -5,7 +5,10 @@
 #include "data_base.h"
 
 void cleanScreen(); // Assumindo que existe em outro arquivo
+void pressEnter();
 bool contains(int* arr, int size, int num);
+int char2int(char caractere);
+char int2char(int num);
 int fsize(char* file);
 void freeList(List* list);
 void freeRecord(Record* record);

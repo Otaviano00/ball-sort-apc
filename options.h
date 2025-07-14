@@ -13,18 +13,18 @@ typedef void (*NoArgsFunction)();
 typedef struct {
     char name[20];
     bool hasTitle;
+    bool needEnd;
     NoArgsFunction function;
 } Option;
 
 // // Variáveis globais (declarações externas)
-extern Option options[NUM_OPTIONS];
 extern int maxOption;
 
 // Declarações das funções
 void zeroOption();
 void endOption();
-void addOption(char* name, bool hasTitle, NoArgsFunction function);
-void showOptions();
+void addOption(Option* options, char* name, bool hasTitle, bool needEnd, NoArgsFunction function);
+void showOptions(Option* options);
 void showOption(Option option);
 
 #endif // OPTIONS_H

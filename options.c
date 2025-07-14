@@ -5,28 +5,27 @@
 #include "options.h"
 #include "utils.h"
 
-// Definições das variáveis globais
-Option options[NUM_OPTIONS];
-int maxOption = 0;
+int maxOption;
 
 void zeroOption() {
     maxOption = 0;
 }
 
 void endOption() {
-    printf("\n\n\nPressione Enter para voltar...");
+    printf("\n\n\nPressione <Enter> para voltar...");
     while (getchar() != '\n'); 
     getchar();
 }
 
-void addOption(char* name, bool hasTitle, NoArgsFunction function) {
+void addOption(Option* options, char* name, bool hasTitle, bool needEnd, NoArgsFunction function) {
     strcpy(options[maxOption].name, name);
     options[maxOption].hasTitle = hasTitle;
+    options[maxOption].needEnd = needEnd;
     options[maxOption].function = function;
     maxOption++;
 }
 
-void showOptions() {
+void showOptions(Option* options) {
     for (int i = 0; i < maxOption; i++) {
         printf("[%d] - %s\n", i+1, options[i].name);
     }
@@ -39,5 +38,5 @@ void showOption(Option option) {
 
     option.function();
 
-    endOption();
+    if (option.needEnd) endOption();
 }
