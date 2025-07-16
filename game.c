@@ -39,19 +39,27 @@ void initialScreen() {
 
         if (strlen(nickname) == 0) continue;
 
-        if (findUserByName(nickname) != NULL && strcmp(nickname, "k") != 0) {
-            printf("Esse nome de usuario jah estah em uso. Use outro por favor!\n");
-            pressEnter(1);
-            continue;
-        }
-
         strcpy(userOn.name, nickname);
         userOn.points = 0;
-        bool exists = persist("users", &userOn);
+        bool sucess = persist("users", &userOn);
 
-        if (!exists) {
-            userOn = *(User*) findUserByName(nickname);
+        /*
+            Quando o registro é persistido e ele já existe, a função retorna false. Ela pode 
+            retornar false em outros cenários (como tabela inválida por exemplo), mas por agora vou considerar que false == existe
+        */
+        if (!sucess) {
+            char option;
+
+            do {
+                printf("\nEsse nome de usuario jah estah cadastrado. Gostaria de continuar com ele? [S/N] ");                
+                scanf("%c", &option);
+                cleanBuffer();
+            } while(option != 'S' && option != 's' && option != 'N' && option != 'n');
+
+            if (option == 'N' || option == 'n') continue;
         }
+        
+        userOn = *(User*) findUserByName(nickname);
 
         break;
     }
@@ -147,13 +155,36 @@ void showInfo() {
     printf("\n\n\nJogo legal feito por Kaua Otaviano para a materia APC.\n");
 }
 
+bool verifyColumnComplete(Level* level, int origColumn, int destColumn) {
+    char pivotBall = level->columns[destColumn-1].balls[0];
+    for (int i = 0; i < level->maxHeight; i++) {
+        if (level->columns[destColumn-1].balls[i] != pivotBall) return false;
+    }
+
+    level->columns[origColumn-1].complete = false;
+    level->columns[destColumn-1].complete = true;
+
+    return true;
+}
+
+bool verifyWin(Level* level) {
+    int validColumns = 0;
+    for (int i = 0; i < level->numColumns; i++) {
+        if (level->columns[i].complete) validColumns++;
+    }
+
+    if (validColumns < level->numColumns - level->numEmptyColumns) return false;
+
+    return true;
+}
+
 bool changeBalls(Level* level, int origColumn, int destColumn) {
     printf("\n");
     int origSize = 0;
     int destSize = 0;
     
     if (origColumn < 1 || origColumn > level->numColumns) {
-        printf("Coluna de origem inválida!");
+        printf("Coluna de origem invalida!");
         return false;
     }
 
@@ -165,7 +196,7 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
     }
 
     if (destColumn < 1 || destColumn > level->numColumns) {
-        printf("Coluna de destino inválida!");
+        printf("Coluna de destino invalida!\n");
         return false;
     }
     
@@ -194,6 +225,14 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
         level->columns[origColumn-1].balls[origSize] = 'X';
     }
 
+    
+    bool statusOrigColumn = level->columns[origColumn-1].complete;
+    if (verifyColumnComplete(level, origColumn, destColumn) && !statusOrigColumn ) {
+        printf("Voce fechou a coluna %d!\n", destColumn);
+
+        if (!verifyWin(level)) pressEnter(1, false);
+    }
+
     return true;
 }
 
@@ -201,7 +240,7 @@ void startGame() {
     // setUpGameLayout(5, 4, 1);
     List* allLevels = findAll("levels");
     int numLevel = 0;
-    for (int i = 2; i <= allLevels->size; i++) {
+    for (int i = 1; i <= allLevels->size; i++) {
         Level*  level = (Level*) (findById("levels", i)->value);
         while (true) {
             cleanScreen();
@@ -217,17 +256,33 @@ void startGame() {
 
             bool sucess = changeBalls(level, origColumn, destColumn);
             if (!sucess) {
-                pressEnter(1);
+                pressEnter(1, false);
                 continue;
             };
 
-            if (verifyWin(level)) break;
-            
+            if (verifyWin(level)) {
+                printf("\nPARABENS!!! VOCE VENCEU!!!\n");
+                printf("PARABENS!!! VOCE VENCEU!!!\n");
+                printf("PARABENS!!! VOCE VENCEU!!!\n");
+                printf("PARABENS!!! VOCE VENCEU!!!\n");
+                break;
+            };
+        }
+
+        if (i == allLevels->size) {
+            printf("\nParabens!!! Voce zerou o jogo!\n");
+            pressEnter(1, true);
+            break;
         }
 
         char option;
-        printf("Gostaria de ir para a próxima fase? [S/N] ");
-        scanf("%c", &option);
+        do {
+            printf("\nGostaria de ir para a proxima fase? [S/N] ");
+            scanf("%c", &option);
+            cleanBuffer();
+        } while(option != 'S' && option != 's' && option != 'N' && option != 'n');
+
+        if (option == 'N' || option == 'n') break;
     }
 
     freeList(allLevels);
@@ -266,12 +321,17 @@ bool setUpLevels() {
     char caractere;
     int count = 0;
     int maxHeight = -1;
+    int numEmptyColumns = 0;
     while (fscanf(arq, "%c\n", &caractere) != EOF) {
         if (caractere == '-') {
             if (level.numColumns > 0) {
                 level.order = ++count;
                 level.maxHeight = maxHeight;
+                level.numEmptyColumns = numEmptyColumns;
+
+                numEmptyColumns = 0;
                 maxHeight = -1;
+                
                 persist("levels", &level);
             }
             level.numColumns = 0;
@@ -287,6 +347,8 @@ bool setUpLevels() {
         }
 
         if (caractere >= '0' && caractere <= '9') {
+            if (caractere == '0') numEmptyColumns++;
+
             if (char2int(caractere) >= maxHeight) maxHeight = char2int(caractere);
             level.columns[level.numColumns].size = char2int(caractere);
             for (int i = 0; i < char2int(caractere); i++) {
@@ -301,6 +363,7 @@ bool setUpLevels() {
     if (level.numColumns > 0) {
         level.order = ++count;
         level.maxHeight = maxHeight;
+        level.numEmptyColumns = numEmptyColumns;
         persist("levels", &level);
     }
 
@@ -328,7 +391,7 @@ int menuInitial() {
 
     int option;
     option = getchar() - '0';
-
+    cleanBuffer();
     return option;
 }
 

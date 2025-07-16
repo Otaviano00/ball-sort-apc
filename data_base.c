@@ -367,7 +367,7 @@ bool persist(char* table, void* payload) {
         case TABLE_USERS:
 
             if (findUserByName(((User*) payload)->name) != NULL) {
-                printf("O nickname '%s' jah estah cadastrado. Use outro por favor.\n", ((User*) payload)->name);
+                // printf("O nickname '%s' jah estah cadastrado. Use outro por favor.\n", ((User*) payload)->name);
                 ret = false;
                 break;
             }

@@ -13,12 +13,19 @@ void cleanScreen() {
   #endif
 }
 
-void pressEnter(int numOfBreaks) {
+void pressEnter(int numOfBreaks, bool clean) {
   for (int i = 0; i < numOfBreaks; i++) printf("\n");
 
   printf("Pressione <Enter> para continuar...");
-  getchar();
-  cleanScreen();
+
+  cleanBuffer();
+
+  if (clean) cleanScreen();
+}
+
+void cleanBuffer() {
+  int c;
+  while ((c = getchar()) != '\n');
 }
 
 bool contains(int* arr, int size, int num) {

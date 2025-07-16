@@ -41,6 +41,7 @@ typedef struct {
     Stack columns[10];
     int maxHeight;
     int numColumns;
+    int numEmptyColumns;
 } Level;
 
 

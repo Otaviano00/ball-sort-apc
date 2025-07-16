@@ -4,8 +4,9 @@
 #include <stdbool.h>
 #include "data_base.h"
 
-void cleanScreen(); // Assumindo que existe em outro arquivo
-void pressEnter();
+void cleanScreen(); 
+void cleanBuffer();
+void pressEnter(int numOfBreaks, bool clean);
 bool contains(int* arr, int size, int num);
 int char2int(char caractere);
 char int2char(int num);

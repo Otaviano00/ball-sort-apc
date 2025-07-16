@@ -13,8 +13,7 @@ void zeroOption() {
 
 void endOption() {
     printf("\n\n\nPressione <Enter> para voltar...");
-    while (getchar() != '\n'); 
-    getchar();
+    cleanBuffer();
 }
 
 void addOption(Option* options, char* name, bool hasTitle, bool needEnd, NoArgsFunction function) {
