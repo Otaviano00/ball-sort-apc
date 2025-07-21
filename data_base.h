@@ -44,10 +44,16 @@ typedef struct {
     int numEmptyColumns;
 } Level;
 
+typedef struct {
+    int rank;
+    int points;
+    char name[20];
+} Ranking;
+
 
 bool persist(char* table, void* payload); 
 Record* findById(char* table, int id);
-User* findUserByName(char* name);
+Record* findUserByName(char* name);
 KeyValue* findByKey(char* table, char* key);
 List* findAll(char* table);
 bool update(char* table, Record* record);

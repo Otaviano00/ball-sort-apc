@@ -15,6 +15,7 @@ TableType getTableType(char* table) {
     if (strcmp(table, "configs") == 0) return TABLE_CONFIGS;
     if (strcmp(table, "levels") == 0) return TABLE_LEVEL;
     if (strcmp(table, "infos") == 0) return TABLE_INFOS;
+    if (strcmp(table, "ranking") == 0) return TABLE_RANKING;
     return TABLE_UNKNOWN;
 }
 
@@ -90,6 +91,9 @@ int getLastId(char* table) {
         case TABLE_LEVEL:
             sizeRecord = sizeof(int) + sizeof(Level);
             break;
+        case TABLE_RANKING:
+            sizeRecord = sizeof(int) + sizeof(Ranking);
+            break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
     }
@@ -105,9 +109,10 @@ int getLastId(char* table) {
 
 // Funções de leitura:
 
-User* findUserByName(char* name) {
+Record* findUserByName(char* name) {
     char* filePath;
     FILE* arq;
+    Record* record = malloc(sizeof(Record));
     bool found = false;
 
     filePath = createFilePath("users");
@@ -128,6 +133,11 @@ User* findUserByName(char* name) {
         fread(user, sizeof(User), 1, arq);
 
         if (strcmp(user->name, name) == 0) {
+            record->key = malloc(sizeof(int));
+            record->value = malloc(sizeof(User));
+            *(int*) record->key = temp;
+            *(User*) record->value = *user;
+
             found = true;
             break;
         }
@@ -144,7 +154,7 @@ User* findUserByName(char* name) {
     fclose(arq);
  
     free(filePath);
-    return user;
+    return record;
 }
 
 
@@ -322,6 +332,24 @@ List* findAll(char* table) {
             }
 
             break;
+
+        case TABLE_RANKING:
+            sizeRecord = sizeof(int) + sizeof(Ranking);
+            numOfRecords = fsize(filePath) / sizeRecord;
+                
+            list->elements = malloc(sizeof(Record) * numOfRecords);
+            for (int i = 0; i < numOfRecords; i++) {
+                list->elements[i].key = malloc(sizeof(int));
+                list->elements[i].value = malloc(sizeof(Ranking));
+            }
+            list->size = numOfRecords;
+
+            for (int i = 0; i < numOfRecords; i++) {
+                fread((int*) list->elements[i].key, sizeof(int), 1, arq);
+                fread((Ranking*) list->elements[i].value, sizeof(Ranking), 1, arq);
+            }
+
+            break;
         case TABLE_INFOS:
         case TABLE_CONFIGS:
             sizeRecord = sizeof(KeyValue);
@@ -375,6 +403,11 @@ bool persist(char* table, void* payload) {
             fwrite(record.key, sizeof(int), 1, arq);
             fwrite(record.value, sizeof(User), 1, arq);
     
+            break;
+        case TABLE_RANKING:
+            fwrite(record.key, sizeof(int), 1, arq);
+            fwrite(record.value, sizeof(Ranking), 1, arq);
+
             break;
         case TABLE_LEVEL:            
             fwrite(record.key, sizeof(int), 1, arq);

@@ -8,8 +8,7 @@
 #include "data_base.h"
 
 // Dados sobre o jogo
-Option menuStart[NUM_OPTIONS];
-Option menuConfig[NUM_OPTIONS];
+Menu menuStart, menuConfig;
 User userOn;
 
 FILE* arq;
@@ -59,10 +58,80 @@ void initialScreen() {
             if (option == 'N' || option == 'n') continue;
         }
         
-        userOn = *(User*) findUserByName(nickname);
+        userOn = *(User*) findUserByName(nickname)->value;
 
         break;
     }
+}
+
+void showRanking() {
+    FILE* arq = fopen("tables/ranking.bin", "wb");
+    fclose(arq);
+
+    List* list = findAll("users");
+
+    for (int i = 0; i < list->size; i++) {
+        for (int j = 0; j < list->size - i - 1; j++) {
+            if (
+                strcmp(
+                    ((User*) list->elements[j].value)->name, ((User*) list->elements[j+1].value)->name
+                )
+            ) {
+                User temp = *(User*) list->elements[j].value;
+                *(User*) list->elements[j].value = *(User*) list->elements[j+1].value;
+                *(User*) list->elements[j+1].value = temp;
+            }
+        }
+    }
+
+    for (int i = 0; i < list->size; i++) {
+        for (int j = 0; j < list->size - i - 1; j++) {
+            if (((User*) list->elements[j].value)->points < ((User*) list->elements[j+1].value)->points) {
+                User temp = *(User*) list->elements[j].value;
+                *(User*) list->elements[j].value = *(User*) list->elements[j+1].value;
+                *(User*) list->elements[j+1].value = temp;
+            }
+        }
+    }
+
+    for (int i = 0; i < list->size && i < 10; i++) {
+        User user = *(User*) list->elements[i].value;
+
+        if (user.points <= 0) continue;
+
+        Ranking rank = {i+1, user.points, " "};
+        strcpy(rank.name, user.name);
+        persist("ranking", &rank);
+    }
+
+    freeList(list); 
+
+
+    list = findAll("ranking");
+
+    for (int i = 0; i < list->size && i < 10; i++) {
+        Ranking user = *(Ranking*) list->elements[i].value;
+        printf("%d^ - %d pontos -  %s\n", i+1, user.points, user.name);
+    }
+
+    freeList(list);
+}
+
+void resetRanking() {
+    FILE* arq = fopen("tables/ranking.bin", "wb");
+    fclose(arq);
+
+    List* list = findAll("users");
+
+    for (int i = 0; i  < list->size; i++) {
+        Record temp = list->elements[i];
+
+        (*(User*) temp.value).points = 0;
+
+        update("users", &temp);
+    }
+
+    freeList(list);
 }
 
 void printBall(char ball) {
@@ -184,7 +253,7 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
     int destSize = 0;
     
     if (origColumn < 1 || origColumn > level->numColumns) {
-        printf("Coluna de origem invalida!");
+        printf("Coluna de origem invalida!\n");
         return false;
     }
 
@@ -237,7 +306,6 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
 }
 
 void startGame() {
-    // setUpGameLayout(5, 4, 1);
     List* allLevels = findAll("levels");
     int numLevel = 0;
     for (int i = 1; i <= allLevels->size; i++) {
@@ -265,6 +333,16 @@ void startGame() {
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
+
+                Record temp = *findUserByName(userOn.name);
+                (*(User*) temp.value).points += level->order * 100;
+
+                userOn = *(User*) temp.value;
+
+                update("users", &temp);
+
+                freeRecord(&temp);
+
                 break;
             };
         }
@@ -289,7 +367,7 @@ void startGame() {
 }
 
 void configGame() {
-    printf("configuracao\n");
+    showMenu(menuConfig, userOn);
 }
 
 void exitGame(){   
@@ -371,51 +449,36 @@ bool setUpLevels() {
     return true;
 }
 
-void setUpOptions() {
-    zeroOption();
-    addOption(menuStart, "Jogar", false, false, startGame);
-    addOption(menuStart, "Configuracoes", true, true, configGame);
-    addOption(menuStart, "Informacoes", true, true, showInfo);
-    addOption(menuStart, "Sair", false, false, exitGame);
+void setUpMenuStart() {
+    strcpy(menuStart.title, "Ball Sort");
+    menuStart.numOptions = 0;
+
+    addOption(&menuStart, "Jogar", false, false, startGame);
+    addOption(&menuStart, "Ranking", true, true, showRanking);
+    addOption(&menuStart, "Configuracoes", true, false, configGame);
+    addOption(&menuStart, "Informacoes", true, true, showInfo);
+    addOption(&menuStart, "Sair", false, false, exitGame);
 }
 
-int menuInitial() {
-    cleanScreen();
+void setUpMenuConfig() {
+    strcpy(menuConfig.title, "Configuracoes");
+    menuConfig.numOptions = 0;
 
-    printf("=================== Ball Sort ===================\n");
-    printf("User: %s -- Points: %d\n", userOn.name, userOn.points);
-
-    showOptions(menuStart);
-
-    printf("Escolha uma opcao: ");
-
-    int option;
-    option = getchar() - '0';
-    cleanBuffer();
-    return option;
+    addOption(&menuConfig, "Zerar Ranking", false, false, resetRanking);
+    addOption(&menuConfig, "Voltar", false, false, NULL);
 }
 
 int main() {
     srand(time(NULL));
 
-    setUpOptions();
+    setUpMenuStart();
+    setUpMenuConfig();
 
     if (!setUpLevels()) return 0;
 
     initialScreen();
 
-    while (true) {
-        int choise = menuInitial() - 1;
-
-        if (choise < 0 || choise >= maxOption) continue;
-
-        if (choise == maxOption - 1) {
-            menuStart[choise].function();
-            break;
-        }
-        
-        showOption(menuStart[choise]);        
-    }
+    showMenu(menuStart, userOn);
 
     return 0;
 }
