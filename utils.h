@@ -13,5 +13,6 @@ char int2char(int num);
 int fsize(char* file);
 void freeList(List* list);
 void freeRecord(Record* record);
+bool questionBoolean(char* message);
 
 #endif

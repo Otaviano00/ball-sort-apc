@@ -83,3 +83,18 @@ void freeRecord(Record* record) {
   free(record->value);
   free(record->key);
 }
+
+bool questionBoolean(char* message) {
+    char option;
+    do {
+        printf("\n");
+        printf("%s", message);
+        printf(" [S/N] ");
+        scanf("%c", &option);
+        cleanBuffer();
+    } while(option != 'S' && option != 's' && option != 'N' && option != 'n');
+
+    if (option == 'N' || option == 'n') return false;
+
+    return true;
+}

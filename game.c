@@ -47,15 +47,7 @@ void initialScreen() {
             retornar false em outros cenários (como tabela inválida por exemplo), mas por agora vou considerar que false == existe
         */
         if (!sucess) {
-            char option;
-
-            do {
-                printf("\nEsse nome de usuario jah estah cadastrado. Gostaria de continuar com ele? [S/N] ");                
-                scanf("%c", &option);
-                cleanBuffer();
-            } while(option != 'S' && option != 's' && option != 'N' && option != 'n');
-
-            if (option == 'N' || option == 'n') continue;
+            if (!questionBoolean("Esse nome de usuario jah estah cadastrado. Gostaria de continuar com ele?")) continue;
         }
         
         userOn = *(User*) findUserByName(nickname)->value;
@@ -77,6 +69,16 @@ void showRanking() {
                     ((User*) list->elements[j].value)->name, ((User*) list->elements[j+1].value)->name
                 )
             ) {
+                User temp = *(User*) list->elements[j].value;
+                *(User*) list->elements[j].value = *(User*) list->elements[j+1].value;
+                *(User*) list->elements[j+1].value = temp;
+            }
+        }
+    }
+
+    for (int i = 0; i < list->size; i++) {
+        for (int j = 0; j < list->size - i - 1; j++) {
+            if ( strcmp(((User*) list->elements[j].value)->name, ((User*) list->elements[j+1].value)->name) > 0) {
                 User temp = *(User*) list->elements[j].value;
                 *(User*) list->elements[j].value = *(User*) list->elements[j+1].value;
                 *(User*) list->elements[j+1].value = temp;
@@ -118,6 +120,8 @@ void showRanking() {
 }
 
 void resetRanking() {
+    if (!questionBoolean("Tem certeza que quer resetar o ranking? Isso irah zerar os pontos de todos os usuarios!")) return; 
+
     FILE* arq = fopen("tables/ranking.bin", "wb");
     fclose(arq);
 
@@ -132,6 +136,8 @@ void resetRanking() {
     }
 
     freeList(list);
+
+    printf("Ranking resetado com sucesso!\n");
 }
 
 void printBall(char ball) {
@@ -353,14 +359,7 @@ void startGame() {
             break;
         }
 
-        char option;
-        do {
-            printf("\nGostaria de ir para a proxima fase? [S/N] ");
-            scanf("%c", &option);
-            cleanBuffer();
-        } while(option != 'S' && option != 's' && option != 'N' && option != 'n');
-
-        if (option == 'N' || option == 'n') break;
+        if (!questionBoolean("Gostaria de ir para a proxima fase?")) break;
     }
 
     freeList(allLevels);
@@ -456,7 +455,7 @@ void setUpMenuStart() {
     addOption(&menuStart, "Jogar", false, false, startGame);
     addOption(&menuStart, "Ranking", true, true, showRanking);
     addOption(&menuStart, "Configuracoes", true, false, configGame);
-    addOption(&menuStart, "Informacoes", true, true, showInfo);
+    addOption(&menuStart, "Instrucoes", true, true, showInfo);
     addOption(&menuStart, "Sair", false, false, exitGame);
 }
 
@@ -464,7 +463,7 @@ void setUpMenuConfig() {
     strcpy(menuConfig.title, "Configuracoes");
     menuConfig.numOptions = 0;
 
-    addOption(&menuConfig, "Zerar Ranking", false, false, resetRanking);
+    addOption(&menuConfig, "Zerar Ranking", false, true, resetRanking);
     addOption(&menuConfig, "Voltar", false, false, NULL);
 }
 
