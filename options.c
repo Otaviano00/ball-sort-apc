@@ -68,6 +68,6 @@ void showMenu(Menu menu, User userOn) {
             break;
         }
     
-        showOption(menu.options[choise]);        
+        if (menu.options[choise].function != NULL) showOption(menu.options[choise]);        
     }
 }

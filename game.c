@@ -56,6 +56,29 @@ void initialScreen() {
     }
 }
 
+void activeBlindMode() {
+    KeyValue* kv = findByKey("configs", "blindMode");
+
+    printf("Modo Blind: ");
+    bool value = (kv->value[0] - '0') == 1;
+    if (value) printf("Ligado\n");
+    else printf("Desligado\n");
+
+    if (!questionBoolean("Deseja trocar o Modo Blind?")) return;
+
+    value = !value;
+
+    kv->value[0] = value + '0';
+
+    update("configs", (Record*) kv);
+
+    printf("Modo blind trocado para: ");
+    if (value) printf("Ligado\n");
+    else printf("Desligado\n");
+
+    free(kv);
+}
+
 void showRanking() {
     FILE* arq = fopen("tables/ranking.bin", "wb");
     fclose(arq);
@@ -207,16 +230,28 @@ void generateRandomGame(int numColuns, int numLines, int numEmptyColumns) {
 }
 
 void printLayout(Level* level) {
-    printf("Level %d\n\n", level->order);
+    KeyValue* kv = findByKey("configs", "blindMode");
+    bool blindMode = kv->value[0] - '0';
+    free(kv);
+
+    printf("Level %d ", level->order);
+    if (blindMode) printf(" --- BLIND MODE");
+    printf("\n\n");
 
     for (int i = level->maxHeight - 1; i >= 0; i--) {
         for (int j = 0; j < level->numColumns; j++) {
             char ball = level->columns[j].balls[i];
 
-            if (ball == 'X') 
+            if (ball == 'X') {
                 printf("|   |");
-            else 
-                printBall(ball);
+                continue;
+            }
+
+            if (blindMode && level->columns[j].size - 1 != i && !level->columns[j].complete) {
+                printBall('X');
+            } else {
+                printBall(ball)
+;            }
         }
         printf("\n");
     }
@@ -464,7 +499,16 @@ void setUpMenuConfig() {
     menuConfig.numOptions = 0;
 
     addOption(&menuConfig, "Zerar Ranking", false, true, resetRanking);
+    addOption(&menuConfig, "Modo Blind", false, true, activeBlindMode);
+    addOption(&menuConfig, "Editor de fases", false, false, NULL);
     addOption(&menuConfig, "Voltar", false, false, NULL);
+}
+
+void setUpGlobalConfigs() {
+    KeyValue config = {"blindMode", "0"};
+    if (!persist("configs", &config)) {
+        update("configs", (Record*) &config);
+    }
 }
 
 int main() {
@@ -472,6 +516,8 @@ int main() {
 
     setUpMenuStart();
     setUpMenuConfig();
+    setUpGlobalConfigs();
+
 
     if (!setUpLevels()) return 0;
 
