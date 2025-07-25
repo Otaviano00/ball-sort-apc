@@ -35,6 +35,13 @@ bool contains(int* arr, int size, int num) {
   return false;
 }
 
+bool strContainsChar(char* arr, int size, char caractere) {
+  for (int i = 0; i < size; i++) {
+      if (arr[i] == caractere) return true; 
+  }   
+  return false;
+}
+
 int char2int(char caractere) {
   int num = caractere - '0';
 

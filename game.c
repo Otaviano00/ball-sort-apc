@@ -136,7 +136,7 @@ void showRanking() {
 
     for (int i = 0; i < list->size && i < 10; i++) {
         Ranking user = *(Ranking*) list->elements[i].value;
-        printf("%d^ - %d pontos -  %s\n", i+1, user.points, user.name);
+        printf("%d^ - %s - %d max. level\n", i+1, user.name, user.points);
     }
 
     freeList(list);
@@ -171,63 +171,63 @@ void printBall(char ball) {
         case '@': color += 3; break;
         case '&': color += 4; break;
         case '%': color += 5; break;
-
+        case '$': color += 7; break;
     }
     printf("|\033[1;%dm%3c\033[0m|", color, ball);
 }
 
-void cleanGameLayout() {
-    for (int i = 0; i < maxLine; i++) {
-        for (int j = 0; j < maxColumn; j++) {
-            layout[j].balls[i] = 0;
-        }
-        layout[i].size = 0;
-    }
-}
+// void cleanGameLayout() {
+//     for (int i = 0; i < maxLine; i++) {
+//         for (int j = 0; j < maxColumn; j++) {
+//             layout[j].balls[i] = 0;
+//         }
+//         layout[i].size = 0;
+//     }
+// }
 
-int* generateRandomNums(int amount, int range) {
-    int* arr = malloc(sizeof(int) * amount);
-    for (int i = 0; i < amount; i++) {
-        int num = rand() % range;
-        while (contains(arr, amount, num)) {
-            num = rand() % range;
-        } 
-        arr[i] = num;
-    }
-    return arr;
-}
+// int* generateRandomNums(int amount, int range) {
+//     int* arr = malloc(sizeof(int) * amount);
+//     for (int i = 0; i < amount; i++) {
+//         int num = rand() % range;
+//         while (contains(arr, amount, num)) {
+//             num = rand() % range;
+//         } 
+//         arr[i] = num;
+//     }
+//     return arr;
+// }
 
 
-void generateRandomGame(int numColuns, int numLines, int numEmptyColumns) {
-    cleanGameLayout();
+// void generateRandomGame(int numColuns, int numLines, int numEmptyColumns) {
+//     cleanGameLayout();
 
-    maxColumn = numColuns;
-    maxLine = numLines;
-    int balls[10];
+//     maxColumn = numColuns;
+//     maxLine = numLines;
+//     int balls[10];
 
-    for (int i = 0; i < 10; i++) {
-        balls[i] = 0;
-    }
+//     for (int i = 0; i < 10; i++) {
+//         balls[i] = 0;
+//     }
 
-    int* emptyColumns = generateRandomNums(numEmptyColumns, numColuns);
+//     int* emptyColumns = generateRandomNums(numEmptyColumns, numColuns);
 
-    for (int j = 0; j < numColuns; j++) {
-        if (contains(emptyColumns, numEmptyColumns, j)) continue;
-        for (int i = 0; i < numLines ; i++) {
-            int num = rand() % (numColuns - numEmptyColumns);
+//     for (int j = 0; j < numColuns; j++) {
+//         if (contains(emptyColumns, numEmptyColumns, j)) continue;
+//         for (int i = 0; i < numLines ; i++) {
+//             int num = rand() % (numColuns - numEmptyColumns);
             
-            while (balls[num] >= numLines) {
-                num = rand() % (numColuns - numEmptyColumns);
-            }
+//             while (balls[num] >= numLines) {
+//                 num = rand() % (numColuns - numEmptyColumns);
+//             }
 
-            balls[num]++;
+//             balls[num]++;
 
-            layout[j].balls[i] = num + 1;
-            layout[j].size++;
+//             layout[j].balls[i] = num + 1;
+//             layout[j].size++;
 
-        }
-    }
-}
+//         }
+//     }
+// }
 
 void printLayout(Level* level) {
     KeyValue* kv = findByKey("configs", "blindMode");
@@ -283,9 +283,9 @@ bool verifyWin(Level* level) {
         if (level->columns[i].complete) validColumns++;
     }
 
-    if (validColumns < level->numColumns - level->numEmptyColumns) return false;
+    if (validColumns == level->numTypesOfBalls) return true;
 
-    return true;
+    return false;
 }
 
 bool changeBalls(Level* level, int origColumn, int destColumn) {
@@ -370,13 +370,16 @@ void startGame() {
             };
 
             if (verifyWin(level)) {
+                cleanScreen();
+                printLayout(level);
+
                 printf("\nPARABENS!!! VOCE VENCEU!!!\n");
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
 
                 Record temp = *findUserByName(userOn.name);
-                (*(User*) temp.value).points += level->order * 100;
+                (*(User*) temp.value).points = level->order;
 
                 userOn = *(User*) temp.value;
 
@@ -434,14 +437,19 @@ bool setUpLevels() {
     int count = 0;
     int maxHeight = -1;
     int numEmptyColumns = 0;
+    int numTypesOfBalls = 0;
+    char typesOfBalls[11];
     while (fscanf(arq, "%c\n", &caractere) != EOF) {
         if (caractere == '-') {
             if (level.numColumns > 0) {
                 level.order = ++count;
                 level.maxHeight = maxHeight;
                 level.numEmptyColumns = numEmptyColumns;
+                level.numTypesOfBalls = strlen(typesOfBalls);
 
                 numEmptyColumns = 0;
+                numTypesOfBalls = 0;
+                typesOfBalls[0] = '\0';
                 maxHeight = -1;
                 
                 persist("levels", &level);
@@ -466,17 +474,16 @@ bool setUpLevels() {
             for (int i = 0; i < char2int(caractere); i++) {
                 char ball;
                 fscanf(arq, "%c\n", &ball);
+
+                if (!strContainsChar(typesOfBalls, numTypesOfBalls, ball)) {
+                    typesOfBalls[numTypesOfBalls++] = ball; 
+                    typesOfBalls[numTypesOfBalls] = '\0';
+                }
+
                 level.columns[level.numColumns].balls[i] = ball;
             }
             level.numColumns++;
         }
-    }
-
-    if (level.numColumns > 0) {
-        level.order = ++count;
-        level.maxHeight = maxHeight;
-        level.numEmptyColumns = numEmptyColumns;
-        persist("levels", &level);
     }
 
     fclose(arq);

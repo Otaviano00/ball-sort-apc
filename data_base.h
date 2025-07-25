@@ -42,6 +42,7 @@ typedef struct {
     int maxHeight;
     int numColumns;
     int numEmptyColumns;
+    char numTypesOfBalls;
 } Level;
 
 typedef struct {

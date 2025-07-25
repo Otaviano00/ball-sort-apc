@@ -8,6 +8,7 @@ void cleanScreen();
 void cleanBuffer();
 void pressEnter(int numOfBreaks, bool clean);
 bool contains(int* arr, int size, int num);
+bool strContainsChar(char* arr, int size, char caractere);
 int char2int(char caractere);
 char int2char(int num);
 int fsize(char* file);
