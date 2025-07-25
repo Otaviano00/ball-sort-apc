@@ -218,7 +218,7 @@ Record* findById(char* table, int id) {
     }
 
     if (!found) { 
-        printf("Id %s nao encontrada.\n", id);
+        printf("Id %d nao encontrada.\n", id);
         free(filePath);
         freeRecord(record);
         free(record);

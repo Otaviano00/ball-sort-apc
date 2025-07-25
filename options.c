@@ -46,7 +46,7 @@ void showMenu(Menu menu, User userOn) {
         cleanScreen();
 
         printf("=================== %s ===================\n", menu.title);
-        printf("User: %s -- Points: %d\n", userOn.name, userOn.points);
+        printf("User: %s -- Max Level: %d\n", userOn.name, userOn.points);
 
         freeRecord(temp);
 

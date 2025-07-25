@@ -17,7 +17,7 @@ Um jogo de ordenação de bolas coloridas em colunas desenvolvido em linguagem C
 ### Compilação e Execução
 ```bash
 # Compilar o projeto
-gcc game.c options.c utils.c data_base.c -o game  && .\game
+gcc game.c options.c utils.c data_base.c -o game
 
 # Executar no Windows
 .\game

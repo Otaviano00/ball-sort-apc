@@ -136,7 +136,7 @@ void showRanking() {
 
     for (int i = 0; i < list->size && i < 10; i++) {
         Ranking user = *(Ranking*) list->elements[i].value;
-        printf("%d^ - %s - %d max. level\n", i+1, user.name, user.points);
+        printf("%d^ - %s - Max Level: %d\n", i+1, user.name, user.points);
     }
 
     freeList(list);
@@ -250,8 +250,8 @@ void printLayout(Level* level) {
             if (blindMode && level->columns[j].size - 1 != i && !level->columns[j].complete) {
                 printBall('X');
             } else {
-                printBall(ball)
-;            }
+                printBall(ball); 
+            }
         }
         printf("\n");
     }
@@ -259,10 +259,6 @@ void printLayout(Level* level) {
     printf("\n");
     for (int i = 1; i <= level->numColumns; i++) printf("%3d  ", i);
     printf("\n\n");
-}
-
-void showInfo() {
-    printf("\n\n\nJogo legal feito por Kaua Otaviano para a materia APC.\n");
 }
 
 bool verifyColumnComplete(Level* level, int origColumn, int destColumn) {
@@ -349,8 +345,8 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
 void startGame() {
     List* allLevels = findAll("levels");
     int numLevel = 0;
-    for (int i = 1; i <= allLevels->size; i++) {
-        Level*  level = (Level*) (findById("levels", i)->value);
+    for (int i = allLevels->size; i <= allLevels->size; i++) {
+        Level* level = (Level*) allLevels->elements[i-1].value;
         while (true) {
             cleanScreen();
             printLayout(level);
@@ -409,6 +405,16 @@ void configGame() {
 
 void exitGame(){   
     printf("\nObrigado por jogar!\n");
+}
+
+void showInfo() {
+    List* list = findAll("infos");
+
+    for (int i = 0; i < list->size; i++) {
+        char* key = (char*) list->elements[i].key;
+        char* info = (char*) list->elements[i].value;
+        printf("\n%s:\n %s\n", key, info);
+    }
 }
 
 bool setUpLevels() {
@@ -486,6 +492,15 @@ bool setUpLevels() {
         }
     }
 
+    if (level.numColumns > 0) {
+        level.order = ++count;
+        level.maxHeight = maxHeight;
+        level.numEmptyColumns = numEmptyColumns;
+        level.numTypesOfBalls = strlen(typesOfBalls);
+        
+        persist("levels", &level);
+    }
+
     fclose(arq);
     return true;
 }
@@ -518,12 +533,48 @@ void setUpGlobalConfigs() {
     }
 }
 
+void setUpInfos() {
+    cleanTable("infos");
+
+    KeyValue info1 = {
+        "Sobre", 
+        "Esse jogo eh uma releitura do BallSort da Guru Games. Ele foi proposto como projeto final para a materia de APC (Algoritmos e logica de programacao), eh feito em C e roda inteiramente no terminal atraves de opcoes escolhidas pelo jogador."
+    };
+
+    KeyValue info2 = {
+        "Objetivo",
+        "O objeto do jogo eh o jogador vencer o maximo de fases que conseguir para poder chegar ao ranking. Para vencer, eh necessario organizar as bolinhas da da fase de forma que as colunas com bolinhas tenham apenas bolinhas da mesma cor."
+    };
+
+    KeyValue info3 = {
+        "Como navegar", 
+        "Para navegar pelo jogo, eh necessario digitar o numero da opcao escolhida e apertar enter. Caso a opcao nao exista ou nao esteja implementada, nada acontece.\0"
+    };
+
+    KeyValue info4 = {
+        "Como jogar",
+        "Para jogar, eh necessario escolher a opcao '[1] - Jogar' no menu principal. La serah apresentado o layout da fases com as colunas e bolinhas e serah pedido para o jogador escolher a coluna de origem da bolinha que quer mover e a coluna de destino dessa bolinha. Apos a leitura, serah informado se o movimento eh invalido e, caso seja, nao serah realizado. Para vencer, eh necessario organizar as bolinhas da da fase de forma que as colunas com bolinhas tenham apenas bolinhas da mesma cor."
+    };
+
+    KeyValue info5 = {
+        "Criador",
+        "Criado por Kaua Otaviano Teixeira - 251023550"
+    };
+
+    persist("infos", &info1);
+    persist("infos", &info2);
+    persist("infos", &info3);
+    persist("infos", &info4);
+    persist("infos", &info5);
+}
+
 int main() {
     srand(time(NULL));
 
     setUpMenuStart();
     setUpMenuConfig();
     setUpGlobalConfigs();
+    setUpInfos();
 
 
     if (!setUpLevels()) return 0;
