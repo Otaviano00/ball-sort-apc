@@ -313,6 +313,11 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
         return false;
     }
 
+    if (origColumn == destColumn) {
+        printf("Coluna de origem tem que ser diferente da de destino!\n");
+        return false;
+    }
+
     char origBall = level->columns[origColumn-1].balls[origSize-1];
     char destBall = level->columns[destColumn-1].balls[destSize-1];
 
