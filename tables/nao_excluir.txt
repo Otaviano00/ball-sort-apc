@@ -1,0 +1,1 @@
+Não excluir esse arquivo para que a pasta tables seja corretamente armazenada.

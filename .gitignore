@@ -6,7 +6,8 @@
 *.a
 *.so
 *.dll
-tables/
+tables/*.bin
+game
 
 # Arquivos de depuração
 *.gch
