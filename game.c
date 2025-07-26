@@ -173,7 +173,7 @@ void printBall(char ball) {
         case '%': color += 5; break;
         case '$': color += 7; break;
     }
-    printf("|\033[1;%dm%3c\033[0m|", color, ball);
+    printf("|\033[1;%dm %c \033[0m|", color, ball);
 }
 
 // void cleanGameLayout() {
@@ -334,7 +334,9 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
     
     bool statusOrigColumn = level->columns[origColumn-1].complete;
     if (verifyColumnComplete(level, origColumn, destColumn) && !statusOrigColumn ) {
-        printf("Voce fechou a coluna %d!\n", destColumn);
+        printf("Voce fechou a coluna do tipo ");
+        printBall(level->columns[destColumn-1].balls[0]);
+        printf(" !\n");
 
         if (!verifyWin(level)) pressEnter(1, false);
     }
@@ -345,7 +347,7 @@ bool changeBalls(Level* level, int origColumn, int destColumn) {
 void startGame() {
     List* allLevels = findAll("levels");
     int numLevel = 0;
-    for (int i = allLevels->size; i <= allLevels->size; i++) {
+    for (int i = 1; i <= allLevels->size; i++) {
         Level* level = (Level*) allLevels->elements[i-1].value;
         while (true) {
             cleanScreen();
@@ -375,7 +377,10 @@ void startGame() {
                 printf("PARABENS!!! VOCE VENCEU!!!\n");
 
                 Record temp = *findUserByName(userOn.name);
-                (*(User*) temp.value).points = level->order;
+                if (((User*) temp.value)->points < level->order) {
+                    (*(User*) temp.value).points = level->order;
+                    printf("\nSeu rank foi atualizado!\n");
+                }
 
                 userOn = *(User*) temp.value;
 

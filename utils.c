@@ -75,21 +75,39 @@ int fsize(char* file) {
 }
 
 void freeList(List* list) {
-  if (list == NULL) return;
-  
-  for (int i = 0; i < list->size; i++) {
-    freeRecord(&(list->elements[i]));
-  }
-  free(list->elements);
-  free(list);
+    if (list == NULL) {
+        return;
+    }
+        
+    for (int i = 0; i < list->size; i++) {        
+        if (list->elements[i].key != NULL) {
+            free(list->elements[i].key);
+            list->elements[i].key = NULL;
+        }
+        
+        if (list->elements[i].value != NULL) {
+            free(list->elements[i].value);
+            list->elements[i].value = NULL;
+        }
+    }
+    
+    free(list->elements);
+    free(list);
 }
 
 void freeRecord(Record* record) {
-  if (record == NULL) return;
-      
-  free(record->value);
-  free(record->key);
+    if (record == NULL) {
+      return;
+    };
+    
+    if (record->key != NULL) {
+        free(record->key);
+    }
+    if (record->value != NULL) {
+        free(record->value);
+    }
 }
+
 
 bool questionBoolean(char* message) {
     char option;

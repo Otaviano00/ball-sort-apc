@@ -351,6 +351,21 @@ List* findAll(char* table) {
 
             break;
         case TABLE_INFOS:
+            sizeRecord = sizeof(KeyValue);
+            numOfRecords = fsize(filePath) / sizeRecord;
+            
+            list->elements = malloc(sizeof(Record) * numOfRecords);
+            for (int i = 0; i < numOfRecords; i++) {
+                list->elements[i].key = malloc(sizeof(char) * 65);
+                list->elements[i].value = malloc(sizeof(char) * 1025);
+            }
+            list->size = numOfRecords;
+
+             for (int i = 0; i < numOfRecords; i++) {
+                fread((char*) list->elements[i].key, 65, 1, arq);
+                fread((char*) list->elements[i].value, 1025, 1, arq);
+            }
+            break;
         case TABLE_CONFIGS:
             sizeRecord = sizeof(KeyValue);
             numOfRecords = fsize(filePath) / sizeRecord;
@@ -387,12 +402,12 @@ bool persist(char* table, void* payload) {
     bool ret = true;
     
     filePath = createFilePath(table);
-    maxId = getLastId(table) + 1;
-    record = (Record) {&maxId, payload};
     arq = fopen(filePath, "ab");
 
     switch (getTableType(table)) {
         case TABLE_USERS:
+            maxId = getLastId(table) + 1;
+            record = (Record) {&maxId, payload};
 
             if (findUserByName(((User*) payload)->name) != NULL) {
                 // printf("O nickname '%s' jah estah cadastrado. Use outro por favor.\n", ((User*) payload)->name);
@@ -405,26 +420,40 @@ bool persist(char* table, void* payload) {
     
             break;
         case TABLE_RANKING:
+            maxId = getLastId(table) + 1;
+            record = (Record) {&maxId, payload};
+
             fwrite(record.key, sizeof(int), 1, arq);
             fwrite(record.value, sizeof(Ranking), 1, arq);
 
             break;
-        case TABLE_LEVEL:            
+        case TABLE_LEVEL:  
+            maxId = getLastId(table) + 1;
+            record = (Record) {&maxId, payload};
+          
             fwrite(record.key, sizeof(int), 1, arq);
             fwrite(record.value, sizeof(Level), 1, arq);
               
             break;
-        case TABLE_CONFIGS:
-        case TABLE_INFOS:            
+        case TABLE_INFOS:
             if (keyExists(table, ((KeyValue*) payload)->key)) {
                 printf("A Key '%s' jah existe. Use outra key.\n", ((KeyValue*) payload)->key);
                 ret = false;
                 break;
             };
-                        
+                    
             fwrite((KeyValue*) payload, sizeof(KeyValue), 1, arq);
             
-            fclose(arq);
+            break;
+        case TABLE_CONFIGS:
+            if (keyExists(table, ((KeyValue*) payload)->key)) {
+                printf("A Key '%s' jah existe. Use outra key.\n", ((KeyValue*) payload)->key);
+                ret = false;
+                break;
+            };
+              
+            fwrite((KeyValue*) payload, sizeof(KeyValue), 1, arq);
+            
             break;
         default:
             printf("Tabela '%s' nao encontrada\n", table);
@@ -482,8 +511,38 @@ bool update(char* table, Record* payload) {
 
             fclose(arq);
             break;
-        case TABLE_CONFIGS:
         case TABLE_INFOS:
+            filePath = createFilePath(table);
+
+            arq = fopen(filePath, "r+b");
+
+            keyValue = ((KeyValue*) payload);
+
+            found = false;
+            do {
+                fgetpos(arq, &fpos);
+                KeyValue temp;
+                fread(&temp, sizeof(KeyValue), 1, arq);
+                
+                if (strcmp(temp.key, keyValue->key) == 0) {
+                    found = true;
+                    break;
+                };
+            } while(feof(arq) == 0);
+
+            if (!found) {
+                free(filePath);
+                fclose(arq);
+                return false;
+            }
+
+            fsetpos(arq, &fpos);
+
+            fwrite(keyValue, sizeof(KeyValue), 1, arq);
+
+            fclose(arq);
+            break;
+        case TABLE_CONFIGS:
             filePath = createFilePath(table);
 
             arq = fopen(filePath, "r+b");
